@@ -22,9 +22,17 @@ void printDebug(char* request, char* headers);
 void webtest(char* host, int port, char* path, int count, bool debug) {
 	int socks[count];
 	int epollFD = epoll_create(1);
+	int startFD = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if(close(startFD) == SOCKET_ERROR) {
+		errorAndExit("Could not close socket");
+	}
+	struct timeval start[count + startFD];
+	struct timeval finish[count + startFD];
+	double delta[count + startFD];
 	for(int i = 0; i < count; i++) {
 		socks[i] = getSocket(host, port);
 		sendRequest(socks[i], host, path);
+		gettimeofday(&start[socks[i]], NULL);
 		struct epoll_event event;
 		event.data.fd = socks[i];
 		event.events = EPOLLIN;
@@ -41,14 +49,23 @@ void webtest(char* host, int port, char* path, int count, bool debug) {
 		}
 		char pBuffer[BUFFER_SIZE];
 		rval = read(event.data.fd, pBuffer, BUFFER_SIZE);
-		cout << pBuffer << endl;
+		gettimeofday(&finish[event.data.fd], NULL);
+		epoll_ctl(epollFD, EPOLL_CTL_DEL, event.data.fd, &event);
 	}
 	for(int i = 0; i < count; i++) {
 		if(close(socks[i]) == SOCKET_ERROR) {
 			errorAndExit("Could not close socket");
 		}
 	}
-	//use epoll to handle responses asynchronously
+	for(int i = startFD; i < count + startFD; i++) {
+		int delta_sec = finish[i].tv_sec - start[i].tv_sec;
+		int delta_usec_remaining = finish[i].tv_usec - start[i].tv_usec;
+		double delta_usec = delta_sec * (double)1000000 + delta_usec_remaining;
+		double delta_time = delta_usec / 1000000;
+		if(debug) {
+			cout << i << ": " << delta_time << " sec" << endl;
+		}
+	}
 }
 
 int getSocket(char* host, int port) {
