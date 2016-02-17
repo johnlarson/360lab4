@@ -57,6 +57,7 @@ void webtest(char* host, int port, char* path, int count, bool debug) {
 			errorAndExit("Could not close socket");
 		}
 	}
+	double total = 0;
 	for(int i = startFD; i < count + startFD; i++) {
 		int delta_sec = finish[i].tv_sec - start[i].tv_sec;
 		int delta_usec_remaining = finish[i].tv_usec - start[i].tv_usec;
@@ -65,7 +66,11 @@ void webtest(char* host, int port, char* path, int count, bool debug) {
 		if(debug) {
 			cout << i << ": " << delta_time << " sec" << endl;
 		}
+		total += delta_time;
+		delta[i] = delta_time;
 	}
+	double avg = total / count;
+	cout << "Average: " << avg << " sec" << endl;
 }
 
 int getSocket(char* host, int port) {
