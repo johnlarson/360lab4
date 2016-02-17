@@ -71,6 +71,16 @@ void webtest(char* host, int port, char* path, int count, bool debug) {
 	}
 	double avg = total / count;
 	cout << "Average: " << avg << " sec" << endl;
+	double diffs[count + startFD];
+	double diffTotal = 0;
+	for(int i = startFD; i < count + startFD; i++) {
+		double diff = delta[i] - avg;
+		double squared = pow(diff, 2);
+		diffTotal += squared;
+	} 
+	double diffAvg = diffTotal / count;
+	double stDev = sqrt(diffAvg);
+	cout << "Standard Deviation: " << stDev << " sec" << endl;
 }
 
 int getSocket(char* host, int port) {
